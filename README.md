@@ -1,6 +1,6 @@
 # Depth_Conversion
 
-## Convert depth horizon picks to TWT using current V0/K model
+#### Convert depth horizon picks to TWT using current V0/K model
 
 ```
 inverse-horizon-vzerok coeff_x=wb.twt.grd coeff_x2=K.below.ml.lis.trimmed.sample.grd verbose=1 < 80MaSB_final_grid.dat > 80MaSB_final_grid_TWT_msec.dat
