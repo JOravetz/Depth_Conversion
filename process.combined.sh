@@ -1,9 +1,26 @@
 #! /bin/sh
 
-#GRID="top_reservoir.twt.grd"
-#GRID="JJO_80MaSB_Peak_FINAL_TWT_msec.dat.trimmed.smooth.grd"
-GRID="JJO_Top_C01_Peak_TWT_msec.dat.trimmed.smooth.grd"
-FNAME=`echo ${GRID} | awk -F".grd" '{print $1}'`
+### GRID="top_reservoir.twt.grd"
+### GRID="JJO_Top_C01_Peak_TWT_msec.dat.trimmed.smooth.grd"
+### GRID="JJO_80MaSB_Peak_FINAL_TWT_msec.dat.trimmed.smooth.grd"
+
+### --------------------------- Start Here ------------------------------------- ###
+
+SURFACE="JJO_80MaSB_Peak_FINAL_TWT_msec.dat"
+### SURFACE="Top_C_Sand_TWT.reform.dat"
+### SURFACE="Top_Reservoir_ROB_TWT_msec_19Nov2015_picks.dat"
+
+FNAME=`echo ${SURFACE} | awk -F".dat" '{print $1}'`
+GRID="${FNAME}.grd"
+
+RANGE_VELOCITIES="-R511797/527792/152443/169653"
+MINMAX=`minmax -C ${SURFACE}`
+LOW_TWT=`echo ${MINMAX} | awk '{print $5}'`
+HIGH_TWT=`echo ${MINMAX} | awk '{print $6}'`
+
+surface ${SURFACE} -G${GRID} -S2000 -T0.5 -I721+ ${RANGE_VELOCITIES} -Ll${LOW_TWT} -Lu${HIGH_TWT} -V
+
+### FNAME=`echo ${GRID} | awk -F".grd" '{print $1}'`
 
 echo "Intersecting checkshots with horizon = ${FNAME}"
 
