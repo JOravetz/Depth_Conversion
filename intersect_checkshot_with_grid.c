@@ -1,0 +1,135 @@
+#include "gmt.h"
+#include <limits.h>
+#include <stdio.h>
+#include "par.h"
+#include "su.h"
+#include "cwp.h"
+
+#define min(a,b) ((a) <= (b) ? (a) : (b))
+#define max(a,b) ((a) >= (b) ? (a) : (b))
+#define nint(x)  ((x) < 0 ? ceil ( (x) - 0.5 ) : floor ( (x) + 0.5 ))
+#define abs(x)   ((x) <  0  ? -(x) : (x))
+
+char *sdoc[] = {NULL};
+
+float *f1;
+
+int main (int argc, char **argv) {
+
+   char *coeff_x, file[BUFSIZ], temp[256];
+	
+   struct GRD_HEADER grd_x;
+   struct GMT_EDGEINFO edgeinfo_x;
+   struct GMT_BCR bcr_x;
+   
+   short verbose;
+   int kount, kountm1, index;
+   double zero, min_diff, diff, value_coeff_x, x_loc, y_loc, twt, depth, vavg;
+   double *diff_array, *x_array, *y_array, *twt_array, *depth_array, *vavg_array;
+   register int i;
+
+   FILE *fpp;
+   cwp_String pfile;
+
+   initargs(argc, argv);
+   argc = GMT_begin (argc, argv);
+
+   if (!getparstring("coeff_x", &coeff_x)) coeff_x="80MaSB_final_grid_TWT_msec.dat.trimmed.smooth.grd";
+   if (!getparstring("pfile",&pfile)) pfile = "./Bill_Hay_Checkshots_2016/Ceiba-01_2016.reform.dat";
+   if (!getparshort("verbose" , &verbose)) verbose = 0;
+
+   fpp = efopen (pfile, "r");
+   kount = -1;
+   while (NULL != fgets ( temp, sizeof(temp), fpp )) {
+      ++kount;
+      (void) sscanf ( ((&(temp[0]))), "%lf%lf%lf%lf%lf", &x_loc, &y_loc, &twt, &depth, &vavg );
+   }
+
+   x_array     = ealloc1double ( kount );
+   y_array     = ealloc1double ( kount );
+   twt_array   = ealloc1double ( kount );
+   depth_array = ealloc1double ( kount );
+   vavg_array  = ealloc1double ( kount );
+   diff_array  = ealloc1double ( kount );
+
+   rewind ( fpp );
+   for ( i = 0; i < kount; ++i ) {
+      fgets ( temp, sizeof(temp), fpp );
+      (void) sscanf ( ((&(temp[0]))), "%lf%lf%lf%lf%lf", &x_loc, &y_loc, &twt, &depth, &vavg );
+      x_array[i]     = x_loc;
+      y_array[i]     = y_loc;
+      twt_array[i]   = twt;
+      depth_array[i] = depth;
+      vavg_array[i]  = vavg;
+   }
+   efclose ( fpp );
+
+   if ( verbose ) {
+      fprintf ( stderr, "\n" );
+      fprintf ( stderr, "GMT grid file name = %s\n", coeff_x );
+      fprintf ( stderr, "Checkshot file name = %s, Number of values in file = %5d\n", pfile, kount );
+      fprintf ( stderr, "\n" );
+   }
+
+   GMT_boundcond_init (&edgeinfo_x);
+   GMT_grd_init (&grd_x,  argc, argv, FALSE);
+   if (GMT_read_grd_info (coeff_x,  &grd_x))  fprintf (stderr, "%s: Error opening file %s\n", GMT_program, file);
+   f1 = (float *) GMT_memory (VNULL, (size_t)((grd_x.nx  + 4) * (grd_x.ny  + 4)), sizeof(float), GMT_program);
+   GMT_pad[0] = GMT_pad[1] = GMT_pad[2] = GMT_pad[3] = 2;
+   GMT_boundcond_param_prep (&grd_x,  &edgeinfo_x);
+   GMT_boundcond_set (&grd_x, &edgeinfo_x, GMT_pad, f1);
+   GMT_bcr_init (&grd_x,  GMT_pad, BCR_BSPLINE, 1, &bcr_x);
+   GMT_read_grd (coeff_x,  &grd_x,  f1, 0.0, 0.0, 0.0, 0.0, GMT_pad, FALSE);
+
+   min_diff = DBL_MAX;
+   index = 0;
+   zero = 0.0;
+   kountm1 = kount - 1;
+   for ( i = 0; i < kount; ++i ) {
+      x_loc = x_array[i];
+      y_loc = y_array[i];
+      twt   = twt_array[i];
+      vavg  = vavg_array[i];
+      depth = depth_array[i];
+      value_coeff_x  = abs ( GMT_get_bcr_z (&grd_x,  x_loc, y_loc, f1, &edgeinfo_x,  &bcr_x) );
+      if ( !(GMT_is_dnan (value_coeff_x)) ) {
+         diff_array[i] = diff = value_coeff_x - twt;
+         if ( diff < min_diff && diff >= zero ) {
+            min_diff = diff;
+            index = i;
+         }
+         if ( verbose ) fprintf ( stderr, "Num = %5d X = %10.2f Y = %10.2f Vavg = %10.2f Depth = %12.4f TWT = %12.4f TWT_GRID = %12.4f DIFF = %12.6f\n", i, x_loc, y_loc, vavg, depth, twt, value_coeff_x, diff );
+      }
+   }
+
+   if ( diff_array[kountm1] > zero ) return EXIT_FAILURE;
+
+   dintlin ( kount, diff_array, x_array, x_array[0], x_array[kountm1], 1, &zero, &x_loc );
+   dintlin ( kount, diff_array, y_array, y_array[0], y_array[kountm1], 1, &zero, &y_loc );
+   dintlin ( kount, diff_array, twt_array, twt_array[0], twt_array[kountm1], 1, &zero, &twt );
+   dintlin ( kount, diff_array, vavg_array, vavg_array[0], vavg_array[kountm1], 1, &zero, &vavg );
+   dintlin ( kount, diff_array, depth_array, depth_array[0], depth_array[kountm1], 1, &zero, &depth );
+
+   value_coeff_x  = abs ( GMT_get_bcr_z (&grd_x,  x_loc, y_loc, f1, &edgeinfo_x,  &bcr_x) );
+
+   if ( verbose ) {
+      fprintf ( stderr, "\n" );
+      fprintf ( stderr, "Index = %5d, Minimum difference = %12.4f, Interpolated X = %12.6f, Interpolated Y = %12.6f\n", index, min_diff, x_loc, y_loc );
+      fprintf ( stderr, "Index = %5d, Interpolated TWT = %12.6f, Interpolated VAVG = %12.6f, Interpolated DEPTH = %12.6f\n", index, twt, vavg, depth );
+      fprintf ( stderr, "TWT extracted from GRID = %12.6f, DIFF from Interpolated TWT = %12.6f\n", value_coeff_x, value_coeff_x - twt );
+   }
+
+   printf ( "%12.4f %12.4f %12.4f %12.4f %12.4f\n", x_loc, y_loc, value_coeff_x, depth, vavg );
+
+   free1double ( x_array );
+   free1double ( y_array );
+   free1double ( twt_array );
+   free1double ( depth_array );
+   free1double ( vavg_array );
+   free1double ( diff_array );
+
+   GMT_free ((void *)f1);
+   GMT_end (argc, argv);
+
+   return EXIT_SUCCESS;
+}
