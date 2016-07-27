@@ -6,9 +6,9 @@
 
 ### --------------------------- Start Here ------------------------------------- ###
 
-SURFACE="JJO_80MaSB_Peak_FINAL_TWT_msec.dat"
+SURFACE="Top_Reservoir_ROB_TWT_msec_19Nov2015_picks.dat"
 ### SURFACE="Top_C_Sand_TWT.reform.dat"
-### SURFACE="Top_Reservoir_ROB_TWT_msec_19Nov2015_picks.dat"
+### SURFACE="JJO_80MaSB_Peak_FINAL_TWT_msec.dat"
 
 FNAME=`echo ${SURFACE} | awk -F".dat" '{print $1}'`
 GRID="${FNAME}.grd"
@@ -34,14 +34,19 @@ mv bub ${FNAME}.checkshots.intersect.dat
 cat ${FNAME}.checkshots.intersect.dat
 
 echo "Extracting seismic average velocities from SEG-Y volume at the TWT horizon"
-
 suextract < Cb_Ph3_TWT_Vavg_062013_32b.su coeff_x1=${GRID} verbose=1 > stuff
-make.gmt.grid.sh -s stuff
-sleep 10
+
+MINMAX=`minmax -C stuff`
+LOW_TWT=`echo ${MINMAX} | awk '{print $5}'`
+HIGH_TWT=`echo ${MINMAX} | awk '{print $6}'`
+surface stuff -Gstuff.surface.grd -S2000 -T0.5 -I721+ ${RANGE_VELOCITIES} -Ll${LOW_TWT} -Lu${HIGH_TWT} -V
+
+### make.gmt.grid.sh -s stuff
+### sleep 10
 
 echo "Compare extracted seismic with reference well average velocities"
 
-GRID1="stuff.trimmed.sample.smooth.grd"
+GRID1="stuff.surface.grd"
 
 gmtset D_FORMAT %0.4lf
 rm -f output.dat
@@ -60,9 +65,9 @@ A_COEFF=`echo ${FOO} | awk '{print $1}'`
 B_COEFF=`echo ${FOO} | awk '{print $2}'`
 
 gmtset D_FORMAT %0.16lf
-grdmath ${GRID1} -1 MUL = stuff.grd
-grdmath stuff.grd stuff.grd MUL ${B_COEFF} MUL = part1.grd
-grdmath stuff.grd ${A_COEFF} MUL part1.grd ADD = trend.grd
+### grdmath ${GRID1} -1 MUL = stuff.grd
+grdmath ${GRID1} ${GRID1} MUL ${B_COEFF} MUL = part1.grd
+grdmath ${GRID1} ${A_COEFF} MUL part1.grd ADD = trend.grd
 
 echo "Measure the difference between trend-corrected seismic average velocities and reference checkshot values"
 
@@ -84,18 +89,24 @@ while read -r LINE ; do
 done < bub
 
 echo "Grid the residual velocity corrections and apply to the trend-corrected values"
-
 awk '{print $1, $2, $8}' output1.dat > residual.vavg.dat
-DXDY=`grdinfo -I ${GRID2}`
-RANGE=`grdinfo -I721+ ${GRID2}`
+
+### DXDY=`grdinfo -I ${GRID2}`
+### RANGE=`grdinfo -I721+ ${GRID2}`
+### MINMAX=`minmax -C residual.vavg.dat`
+### LOW=`echo ${MINMAX} | awk '{print $5}'`
+### HIGH=`echo ${MINMAX} | awk '{print $6}'`
+### echo "DXDY = ${DXDY}, RANGE = ${RANGE}, LOW = ${LOW}, HIGH = ${HIGH}"
+
 MINMAX=`minmax -C residual.vavg.dat`
-LOW=`echo ${MINMAX} | awk '{print $5}'`
-HIGH=`echo ${MINMAX} | awk '{print $6}'`
+LOW_TWT=`echo ${MINMAX} | awk '{print $5}'`
+HIGH_TWT=`echo ${MINMAX} | awk '{print $6}'`
 
-echo "DXDY = ${DXDY}, RANGE = ${RANGE}, LOW = ${LOW}, HIGH = ${HIGH}"
+surface residual.vavg.dat -Gresidual.vavg.grd -S16000 -T0 -I721+ ${RANGE_VELOCITIES} -Ll${LOW_TWT} -Lu${HIGH_TWT} -V
 
-surface residual.vavg.dat -Gstuff.grd -S16000 -T0 -I721+ ${RANGE} -Ll${LOW} -Lu${HIGH} -V
-grdsample stuff.grd -Gresidual.vavg.grd ${DXDY} ${RANGE} -V -Q
+### surface residual.vavg.dat -Gstuff.grd -S16000 -T0 -I721+ ${RANGE} -Ll${LOW} -Lu${HIGH} -V
+### grdsample stuff1.surface.grd -Gresidual.vavg.grd ${DXDY} ${RANGE} -V -Q
+
 grdmath residual.vavg.grd trend.grd ADD = ${FNAME}.vavg.grd
 
 gmtset D_FORMAT %0.2lf
