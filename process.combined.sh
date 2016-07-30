@@ -1,11 +1,14 @@
 #! /bin/sh
 
+SEISMIC_VELOCITIES="Cb_Ph3_TWT_Vavg_062013_32b.su"
+
 ### GRID="top_reservoir.twt.grd"
 ### GRID="JJO_Top_C01_Peak_TWT_msec.dat.trimmed.smooth.grd"
 ### GRID="JJO_80MaSB_Peak_FINAL_TWT_msec.dat.trimmed.smooth.grd"
 
 ### --------------------------- Start Here ------------------------------------- ###
 
+### SURFACE="JJO_Seafloor_TWT.reform.dat"
 SURFACE="Top_Reservoir_ROB_TWT_msec_19Nov2015_picks.dat"
 ### SURFACE="Top_C_Sand_TWT.reform.dat"
 ### SURFACE="JJO_80MaSB_Peak_FINAL_TWT_msec.dat"
@@ -34,7 +37,7 @@ mv bub ${FNAME}.checkshots.intersect.dat
 cat ${FNAME}.checkshots.intersect.dat
 
 echo "Extracting seismic average velocities from SEG-Y volume at the TWT horizon"
-suextract < Cb_Ph3_TWT_Vavg_062013_32b.su coeff_x1=${GRID} verbose=1 > stuff
+suextract < ${SEISMIC_VELOCITIES} coeff_x1=${GRID} verbose=1 > stuff
 
 MINMAX=`minmax -C stuff`
 LOW_TWT=`echo ${MINMAX} | awk '{print $5}'`
@@ -57,9 +60,20 @@ while read -r LINE ; do
    echo "${LINE} ${Vavg_Seismic}" >> output.dat
 done < ${FNAME}.checkshots.intersect.dat
 
+echo "Compute differences between Checkshot and Seismic average velocities"
+awk '{print $0, $5-$6}' output.dat > output1.dat
+
+echo "Compute mean and standard deviation of average-velocity differences and filter data by 1.5 standard-deviations"
+
+MEAN_STDEV_VALUES=`awk '{for(i=7;i<=NF;i++) {sum[i] += $i; sumsq[i] += ($i)^2}} END {for (i=7;i<=NF;i++) { printf "%.15f %.15f \n", sum[i]/NR, sqrt((sumsq[i]-sum[i]^2/NR)/NR)} }' output1.dat`
+MEAN=`echo ${MEAN_STDEV_VALUES} | awk '{print $1}'`
+STDEV=`echo ${MEAN_STDEV_VALUES} | awk '{print $2}'`
+echo "Mean average velocity difference between checkshot and seismic data = ${MEAN}, Standard Deviation = ${STDEV}"
+awk '{ print $0, ($7-'"${MEAN})"'/'"${STDEV}"' }' output1.dat | awk '{if ( sqrt ( $8 *$8 ) < 1.5 ) { $8=""; print $0 }}' > output1.filtered.dat
+
 echo "Compute annd apply a polynomial trend relationship to Seismic average velocities"
 
-awk '{print $6, $5}' output.dat > input.dat
+awk '{print $6, $5}' output1.filtered.dat > input.dat
 FOO=`supoly < input.dat verbose=0 n=3`
 A_COEFF=`echo ${FOO} | awk '{print $1}'`
 B_COEFF=`echo ${FOO} | awk '{print $2}'`
@@ -80,16 +94,16 @@ while read -r LINE ; do
    Y=`echo ${LINE} | awk '{print $2}'`
    Vavg_Seismic=`echo "${X} ${Y}" | grdtrack -Qb -G${GRID2} | awk '{print $3}' | sed 's/-//g'`
    echo "${LINE} ${Vavg_Seismic}" >> bub
-done < output.dat
+done < output1.filtered.dat
 
-rm -f output1.dat
+rm -f output2.dat
 while read -r LINE ; do
-   DIFF=`echo ${LINE} | awk '{printf "%16.8f", $5-$7}'`
-   echo "${LINE} ${DIFF}" >> output1.dat
+   DIFF=`echo ${LINE} | awk '{printf "%16.8f", $5-$8}'`
+   echo "${LINE} ${DIFF}" >> output2.dat
 done < bub
 
 echo "Grid the residual velocity corrections and apply to the trend-corrected values"
-awk '{print $1, $2, $8}' output1.dat > residual.vavg.dat
+awk '{print $1, $2, $9}' output2.dat > residual.vavg.dat
 
 ### DXDY=`grdinfo -I ${GRID2}`
 ### RANGE=`grdinfo -I721+ ${GRID2}`
@@ -124,19 +138,19 @@ while read -r LINE ; do
    Y=`echo ${LINE} | awk '{print $2}'`
    Vavg_Seismic=`echo "${X} ${Y}" | grdtrack -Qb -G${GRID3} | awk '{print $3}' | sed 's/-//g'`
    echo "${LINE} ${Vavg_Seismic}" >> bub
-done < output1.dat
+done < output2.dat
 
-rm -f output2.dat
+rm -f output3.dat
 while read -r LINE ; do
-   DIFF=`echo ${LINE} | awk '{printf "%16.8f", $5-$9}'`
-   echo "${LINE} ${DIFF}" >> output2.dat
+   DIFF=`echo ${LINE} | awk '{printf "%16.8f", $5-$10}'`
+   echo "${LINE} ${DIFF}" >> output3.dat
 done < bub
 
-cp output2.dat ${FNAME}.vavg.output.dat
+cp output3.dat ${FNAME}.vavg.output.dat
 grdmath ${FNAME}.vavg.grd -1 MUL = ${FNAME}.vavg.neg.grd
 gmtset D_FORMAT %0.2lf
 mbm_grdplot -I${FNAME}.vavg.neg.grd -X -V -G2 -A3/30 -B2000
 sleep 10
 ps2pdf ${FNAME}.vavg.neg.grd.ps
 acroread ${FNAME}.vavg.neg.grd.pdf &
-cat output2.dat
+cat output3.dat
