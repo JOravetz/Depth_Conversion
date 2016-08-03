@@ -10,7 +10,27 @@
 #define max(a,b) ((a) >= (b) ? (a) : (b))
 #define nint(x)  ((x) < 0 ? ceil ( (x) - 0.5 ) : floor ( (x) + 0.5 ))
 
-char *sdoc[] = {NULL};
+/*********************** self documentation *********************/
+char *sdoc[] = {
+"                                                                  ",
+" **************************************************************** ",
+"                                                                  ",
+" CONVERT.VAVG.DEPTH -- SU program to intersect well deviation     ",
+"                       survey with seismic average-velocity       ",
+"                       volume.  Output a checkshot table          ", 
+"                                                                  ",
+" convert.vavg.depth < indata dfile kb verbose > outdata           ",
+"                                                                  ",
+" Optional Parameters:                                             ",
+"   dfile (deviation.dat) name of ASCII deviation survey file name ",
+"                         contains X, Y, and TVD values from well  ",
+"   kb (26.0 m.)          kelly-bushing height for TVD datum       ",
+"   verbose (0)           print out information if set to (1)      ",
+"                                                                  ",
+" **************************************************************** ",
+NULL};
+/**************** end self doc **********************************/
+/*Credits:  Joe J. Oravetz, 03/08/2016                          */
 
 segy tr;
 
@@ -22,9 +42,9 @@ cwp_String dfile;
 
 int kount, iloc, jloc, inline_num, xline_num;
 int gelev_min, gelev_max, selev_min, selev_max;
-int imin, ns, ntr;
+int imin, ns, ntr, nsm1, factor1;
 int **trid;
-double kb, x, y, tvd, tvdss;
+double dist, dist_min, kb, x, y, tvd, tvdss;
 double sx_min, sx_max, sy_min, sy_max;
 double amp_output, delrt, twt, dt, factor;
 double *depth, *tr_amp;
@@ -35,12 +55,14 @@ register int i, j, k;
 initargs(argc, argv);
 requestdoc (0);
 
+/* read in some parameters from the command-line */
 if (!getparstring("dfile",&dfile)) dfile = "deviation.dat";
 if (!getparshort("verbose", &verbose)) verbose = 1;
 if (!getpardouble("kb", &kb)) kb = 26.0;
 
 fpd = efopen ( dfile, "r" );
 
+/* get some basic information from the seismic velocity trace-header values */
 ntr = gettra (&tr,  0);
 delrt = tr.delrt;
 if (!getparint("ns",  &ns)) ns = tr.ns;
@@ -53,6 +75,7 @@ tr_amp = ealloc1double ( ns );
 
 factor = 0.0005;
 
+/* scan the deviation file data */
 kount = 0;
 while (NULL != fgets ( temp, sizeof(temp), fpd )) {
    ++kount;
@@ -86,6 +109,7 @@ if ( verbose ) {
    fprintf ( stderr, "\n" );
 }
 
+/* determine the boundaries of the seismic velocity volume */
 sx_min = sy_min = DBL_MAX;
 sx_max = sy_max = DBL_MIN;
 gelev_min = selev_min = INT_MAX;
@@ -113,13 +137,16 @@ if ( verbose ) {
    fprintf ( stderr, "Number of Inlines = %5d, Number of Xlines = %5d\n", inline_num, xline_num );
 }
 
+/* allocate some memory arrays */
 trid    = ealloc2int    ( xline_num, inline_num ); 
 data    = ealloc3double ( ns, xline_num, inline_num ); 
 x_array = ealloc2double ( xline_num, inline_num ); 
 y_array = ealloc2double ( xline_num, inline_num ); 
 
+/* initialize the live trace-header flag array */
 for ( i = 0; i < inline_num; ++i ) for ( j = 0; j < xline_num; ++j ) trid[i][j] = 0;
 
+/* read the velocity data into a memory array */
 rewind ( stdin );
 for ( i = 0; i < ntr; ++i ) {
    gettr (&tr);
@@ -131,9 +158,7 @@ for ( i = 0; i < ntr; ++i ) {
    for ( j = 0; j < ns; ++j ) data[iloc][jloc][j] = tr.data[j];
 }
 
-int nsm1, factor1;
-double dist, dist_min;
-
+/* the real work starts here - loop over deviation data, find the associated velocity value, convert to depth, and interpolate the result for output */
 factor1 = 2000.0;
 nsm1 = ns - 1;
 for ( i = 0; i < kount; ++i ) {
@@ -163,6 +188,7 @@ for ( i = 0; i < kount; ++i ) {
    printf ( "%12.2f %12.2f %12.4f %12.4f %12.4f\n", x, y, twt, tvdss, amp_output );
 }
 
+/* this is only for QC purposes only - to check the velocity array parameters and structure */
 /* tr.trid = 1;
 for ( i = 0; i < inline_num; ++i ) {
    for ( j = 0; j < xline_num; ++j ) {
@@ -178,6 +204,7 @@ for ( i = 0; i < inline_num; ++i ) {
    }
 } */
 
+/* clean up the memory - release the allocated segments */
 free1double (tr_amp);
 free1double (x_dev);
 free1double (y_dev);
