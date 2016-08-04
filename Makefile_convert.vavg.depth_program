@@ -1,0 +1,26 @@
+# Makefile for ...su/main
+
+include $(CWPROOT)/src/Makefile.config
+
+D = $L/libcwp.a $L/libpar.a $L/libsu.a $L/librecip.a
+LFLAGS= -I/u/10700029/include -I/u/10700029/include/gmt -L$L -lsu -lpar -lcwp -lrecip -lm -L/u/10700029/lib64 -lgmt -lpsl -lnetcdf 
+
+PROGS =			  \
+	$B/convert.vavg.depth
+
+INSTALL	:	$(PROGS)
+	touch $@
+
+
+$(PROGS):	$(CTARGET) $D 
+	-$(CC) $(CFLAGS) $(@F).c $(LFLAGS) -o $@
+	@chmod 755 $@
+	@echo $(@F) installed in $B
+
+remake	:
+	-touch *.c 
+	-rm -f $(PROGS)
+	$(MAKE) 
+	
+clean:
+	rm -f a.out junk* JUNK* core
