@@ -4,9 +4,9 @@ Intersect well-deviation surveys with a seismic average-velocity SU (SEG-Y) volu
 
 ## Procedure 
 
-#### Download convert.vavg.depth.c and Makefile_convert.vavg.depth_program.  Edit the makefile example and save as "Makefile".  You must have Seismic Unix installed and in your PATH environment variable
+Download __convert.vavg.depth.c__ and __Makefile_convert.vavg.depth_program__.  Edit the makefile example and save as "Makefile".  You must have Seismic Unix installed and in your PATH environment variable
 
-#### Make a listing of deviation surveys and execute a script to loop over the list (wrapper.process.deviation.sh)
+Make a listing of deviation surveys and execute a script to loop over the list (__wrapper.process.deviation.sh__)
 
 ```
 #! /bin/bash
@@ -19,7 +19,7 @@ while read -r LINE ; do
 done < deviations.lis
 
 ```
-#### Here is a listing of the __process.deviation.sh__ bash script
+Here is a listing of the __process.deviation.sh__ bash script
 
 ```
 #!/bin/bash
@@ -75,7 +75,7 @@ surange < input.su
 echo "Intersecting well trajectory with seismic average velocity data -> extracting checkshot values at intersection points"
 convert.vavg.depth < input.su verbose=${VERBOSE} dfile=deviation.dat > ${FNAME}.checkshot.dat
 ```
-#### Here is an example of the __convert.vavg.depth__ program output:
+Here is an example of the __convert.vavg.depth__ program output:
 
 ```
    520645.65    160690.85       0.0000       0.0000    1540.9706
