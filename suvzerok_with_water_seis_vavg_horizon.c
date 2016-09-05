@@ -141,14 +141,14 @@ int main(int argc, char **argv) {
 	   }
 
 	   if ( check ) {
-	      for (i=0;i<istop;i++) {
+	      for (i=0;i<=istop;i++) {
 	         x[i] = i * dt;
 	         y[i] = ( ( tr.data[i] * x[i] ) * factor ) - water_depth; 
 	         x[i] -= value_coeff_x;
 	      }
 
 	      istart = 0;
-	      for (i=0;i<istop;i++) {
+	      for (i=0;i<=istop;i++) {
 	         if ( x[i] >= zero && y[i] >= zero ) {
 	            istart = i;
 	            break;
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
 	      }
 
 	      num = 0;
-	      for (i=istart;i<istop;i++) {
+	      for (i=istart;i<=istop;i++) {
 	         xin[num] = x[i];
 	         yin[num] = y[i];
 	         ++num;
@@ -164,7 +164,8 @@ int main(int argc, char **argv) {
 
 	      if ( num > 1 ) {
 	         vzerok ( &mode, &num, xin, yin, &vzero, &k, &vzero_out, &k_out );
-	         printf ( "trace = %5d num = %4d x_loc = %12.2f y_loc=%12.2f vzero = %16.8f k = %16.10f water_velocity = %12.4f\n", l, num, x_loc, y_loc, vzero_out, k_out, water_velocity );
+	         printf ( "trace = %5d num = %4d x_loc = %12.2f y_loc=%12.2f vzero = %20.12f k = %20.12f water_velocity = %12.4f water_depth_m = %12.4f WB_TWT = %12.4f Bottom_Horizon_TWT = %12.4f\n", 
+                 l, num, x_loc, y_loc, vzero_out, k_out, water_velocity, water_depth, value_coeff_x, value_coeff_x2 );
 	      }
 	   }
 	}

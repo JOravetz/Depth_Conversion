@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <float.h>
 #include "par.h"
 #include "su.h"
 #include "cwp.h"
@@ -28,16 +27,16 @@ int main (int argc, char **argv) {
    double xref, yref, tref, x_loc, y_loc, twt, delta_v;
    double *x_dv, *y_dv, ***dv;
 
-   float x, y, time, dt, scale_factor;
-   float *twt_array, *vavg_array, *twt_dv_array;
+   double x, y, time, dt, scale_factor;
+   double *twt_array, *vavg_array, *twt_dv_array;
 
    initargs(argc, argv);
 
    if (!getparshort("verbose" , &verbose)) verbose = 0;
-   if (!getparstring("pfile",&pfile)) pfile = "Gridder.dat";
-   if (!getpardouble("delta_x",&delta_x)) delta_x = 25.0;
-   if (!getpardouble("delta_y",&delta_y)) delta_y = 25.0;
-   if (!getpardouble("delta_t",&delta_t)) delta_t = 2.0;
+   if (!getparstring("pfile",&pfile)) pfile = "stuff.combined.dat";
+   if (!getparint("nx",&nx)) nx = 901;
+   if (!getparint("ny",&ny)) ny = 1101;
+   if (!getparint("nt",&nt)) nt = 2001;
   
    fpp = efopen (pfile, "r");
 
@@ -58,27 +57,28 @@ int main (int argc, char **argv) {
       tmax = max ( tmax, twt );
    }
 
-   nx = nint ( abs ( xmax - xmin ) / delta_x ) + 1;
-   ny = nint ( abs ( ymax - ymin ) / delta_y ) + 1;
-   nt = nint ( abs ( tmax - tmin ) / delta_t ) + 1;
-
    nxm1 = nx - 1;
    nym1 = ny - 1;
    ntm1 = nt - 1;
+
+   delta_x = ( xmax - xmin ) / ( nxm1 );
+   delta_y = ( ymax - ymin ) / ( nym1 );
+   delta_t = ( tmax - tmin ) / ( ntm1 );
 
    x_dv = ealloc1double ( nx );
    y_dv = ealloc1double ( ny );
    dv   = ealloc3double ( nt, ny, nx );
 
-   for ( i = 0; i < nx; ++i ) x_dv[i] = ( i * delta_x ) + xmin;
-   for ( j = 0; j < ny; ++j ) y_dv[j] = ( j * delta_y ) + ymin;
+   for ( i = 0; i < nx; ++i ) x_dv[i] = ( (double) i * delta_x ) + xmin;
+   for ( j = 0; j < ny; ++j ) y_dv[j] = ( (double) j * delta_y ) + ymin;
 
    rewind ( fpp );
    for ( l = 0; l < kount; ++l ) {
+      fgets ( temp, sizeof(temp), fpp );
       (void) sscanf ( ((&(temp[0]))), "%lf%lf%lf%lf", &x_loc, &y_loc, &twt, &delta_v);
-      i = nint ( ( x_loc - xmin ) / delta_x ); 
-      j = nint ( ( y_loc - ymin ) / delta_y ); 
-      k = nint ( ( twt   - tmin ) / delta_t ); 
+      i = min ( max ( nint ( ( x_loc - xmin ) / delta_x ), 0 ), nxm1 ); 
+      j = min ( max ( nint ( ( y_loc - ymin ) / delta_y ), 0 ), nym1 ); 
+      k = min ( max ( nint ( ( twt   - tmin ) / delta_t ), 0 ), ntm1 ); 
       dv[i][j][k] = delta_v;
    }
    efclose (fpp);
@@ -103,19 +103,20 @@ int main (int argc, char **argv) {
       fprintf ( stderr, "\n" );
    }
 
-   twt_array     = ealloc1float ( ns );
-   vavg_array    = ealloc1float ( ns );
-   twt_dv_array  = ealloc1float ( ntm1 );
+   twt_array     = ealloc1double ( ns );
+   vavg_array    = ealloc1double ( ns );
+   twt_dv_array  = ealloc1double ( nt );
 
-   for ( i = 0; i < ns; ++i ) twt_array[i] = i * dt;
-   for ( i = 0; i < nt; ++i ) twt_dv_array[i] = i * delta_t;
+   for ( i = 0; i < ns; ++i ) twt_array[i] = (double) i * dt;
+   for ( i = 0; i < nt; ++i ) twt_dv_array[i] = ( (double) i * delta_t ) + tmin;
 
    int signx, signy;
-   float *dv_array, dv_interp, zero;
+   double *dv_array, dv_interp, zero;
    double r_iloc, r_jloc, one, four, wx1, wx2, wy1, wy2;
    double remainder_x, remainder_y;
+   double rx, ry;
 
-   dv_array = ealloc1float (ntm1);
+   dv_array = ealloc1double ( nt );
 
    rewind (stdin);
    zero = 0.0;
@@ -127,7 +128,7 @@ int main (int argc, char **argv) {
       x = tr.sx / scale_factor;
       y = tr.sy / scale_factor;
 
-      fprintf ( stderr, "trace = %5d, X = %.2f, Y = %.2f\n", i, x, y );
+      if ( verbose == 2 ) fprintf ( stderr, "trace = %5d, X = %.4f, Y = %.4f\n", i, x, y );
 
       xref = ( x - xmin ) / delta_x;
       yref = ( y - ymin ) / delta_y;
@@ -141,7 +142,11 @@ int main (int argc, char **argv) {
       remainder_x = xref - r_iloc;
       remainder_y = yref - r_jloc;
 
-      fprintf ( stderr, "iloc = %5d, jloc = %5d, remainder_x = %.4f, remainder_y = %.4f\n", iloc, jloc, remainder_x, remainder_y );
+      if ( verbose == 2 ) {
+         rx = ( (double) iloc * delta_x ) + xmin; 
+         ry = ( (double) jloc * delta_y ) + ymin; 
+         fprintf ( stderr, "iloc = %5d, jloc = %5d, Original_X = %.4f Original_Y = %.4f remainder_x = %.6f, remainder_y = %.4f\n", iloc, jloc, rx, ry, remainder_x, remainder_y );
+      }
 
       if ( (remainder_x >= zero) && (remainder_y >= zero) ) {
          signx = signy = 1;
@@ -149,7 +154,7 @@ int main (int argc, char **argv) {
          wx1 = one - wx2;
          wy2 = remainder_y;
          wy1 = one - wy2;
-      } else if ( (remainder_x < zero) && (remainder_y < zero) ) {
+      } else if ( (remainder_x <= zero) && (remainder_y <= zero) ) {
          signx = signy = -1;
          wx2 = -remainder_x;
          wx1 = -wx2 + one ;
@@ -170,6 +175,9 @@ int main (int argc, char **argv) {
          wy2 = -remainder_y;
          wy1 = -wy2 + one;
       } else {
+         rx = ( (double) iloc * delta_x ) + xmin; 
+         ry = ( (double) jloc * delta_y ) + ymin; 
+         fprintf ( stderr, "trace = %5d, iloc = %5d, jloc = %5d, Original_X = %.4f Original_Y = %.4f remainder_x = %.6f, remainder_y = %.4f\n", i, iloc, jloc, rx, ry, remainder_x, remainder_y );
          fprintf ( stderr, "ERROR, something wrong with remainders --> exiting\n" );
          return EXIT_FAILURE;
       }
@@ -180,18 +188,18 @@ int main (int argc, char **argv) {
                           ( dv[iloc][jloc+(1*signy)][k] * wx1 ) + ( dv[iloc+(1*signx)][jloc+(1*signy)][k] * wx2 ) +
                           ( dv[iloc][jloc][k]           * wy1 ) + ( dv[iloc][jloc+(1*signy)][k]           * wy2 ) + 
                           ( dv[iloc+(1*signx)][jloc][k] * wy1 ) + ( dv[iloc+(1*signx)][jloc+(1*signy)][k] * wy2 ) ) / four;
-         fprintf ( stderr, "TWT_checkshot = %.2f, DV_checkshot = %.4f\n", twt_dv_array[k], dv_array[k] );
+         if ( verbose == 2 ) fprintf ( stderr, "TWT sample = %5d, TWT_checkshot = %.2f, DV_checkshot = %.4f\n", k, twt_dv_array[k], dv_array[k] );
       }
       for ( j = 0; j < ns; ++j ) {
          time = twt_array[j];
-         intlin ( nt, twt_dv_array, dv_array, dv_array[0], dv_array[ntm1], 1, &time, &dv_interp);
+         dintlin ( nt, twt_dv_array, dv_array, dv_array[0], dv_array[ntm1], 1, &time, &dv_interp);
          tr.data[j] += dv_interp;
       }
       puttr ( &tr ); 
    }
 
-   free1float (twt_array);
-   free1float (vavg_array);
+   free1double (twt_array);
+   free1double (vavg_array);
 
    free1double (x_dv); 
    free1double (y_dv); 

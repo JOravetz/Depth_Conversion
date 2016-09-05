@@ -1,5 +1,31 @@
 #! /bin/sh
 
+while [ X"$1" != X-- ]
+do
+    case "$1" in
+      -s) SURFACE="$2"
+          shift 2
+          ;;
+      -v) VERBOSE="$2"
+          shift 2
+          ;;
+  -debug) echo "DEBUG ON"
+          set -x
+          DEBUG="yes"
+          trap '' SIGHUP SIGINT SIGQUIT SIGTERM
+          shift 1
+          ;;
+      -*) echo "${program}: Invalid parameter $1: ignored." 1>&2
+          shift
+          ;;
+       *) set -- -- $@
+          ;;
+    esac
+done
+shift
+
+echo "Working on Surface = ${SURFACE}"
+
 SEISMIC_VELOCITIES="Cb_Ph3_TWT_Vavg_062013_32b.su"
 
 ### GRID="top_reservoir.twt.grd"
@@ -9,7 +35,7 @@ SEISMIC_VELOCITIES="Cb_Ph3_TWT_Vavg_062013_32b.su"
 ### --------------------------- Start Here ------------------------------------- ###
 
 ### SURFACE="JJO_Seafloor_TWT.reform.dat"
-SURFACE="Top_Reservoir_ROB_TWT_msec_19Nov2015_picks.dat"
+### SURFACE="Top_Reservoir_USER_TWT_msec_19Nov2013_picks.dat"
 ### SURFACE="Top_C_Sand_TWT.reform.dat"
 ### SURFACE="JJO_80MaSB_Peak_FINAL_TWT_msec.dat"
 
@@ -29,8 +55,8 @@ echo "Intersecting checkshots with horizon = ${FNAME}"
 
 rm -f ${FNAME}.checkshots.intersect.dat
 while read -r LINE ; do
-   intersect_checkshot_with_grid verbose=1 pfile=./Bill_Hay_Checkshots_2016/${LINE} coeff_x=${GRID} >> ${FNAME}.checkshots.intersect.dat
-done < ./Bill_Hay_Checkshots_2016/checkshots.reform.lis
+   intersect_checkshot_with_grid verbose=1 pfile=./checkshots/${LINE} coeff_x=${GRID} >> ${FNAME}.checkshots.intersect.dat
+done < ./checkshots/checkshots.reform.lis
 echo
 sort ${FNAME}.checkshots.intersect.dat | grep -v -e "nan" > bub
 mv bub ${FNAME}.checkshots.intersect.dat

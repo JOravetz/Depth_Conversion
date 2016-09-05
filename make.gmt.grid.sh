@@ -5,7 +5,7 @@ set -x
 HORIZON=
 DX_OUT=25
 DX_SMOOTH=4000
-NGRID=700+
+NGRID=721+
 NGRID1=200+
 RADIUS=1000
 RADIUS2=1000
@@ -62,7 +62,7 @@ fi
 
 echo "Working on horizon = ${HORIZON}"
 
-gmtset D_FORMAT %0.10lf
+gmtset D_FORMAT %0.16lf
 RANGE=`minmax -I${NGRID} ${HORIZON}`
 
 minmax ${HORIZON} | sed 's/<//g' | sed 's/>//g' | sed 's|/| |g' > ${HORIZON}.minmax

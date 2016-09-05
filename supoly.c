@@ -38,8 +38,8 @@ if ( verbose ) {
 A  = dmatrix (1,n,1,n);
 B  = dvector (1,n);
 
-x = dvector (0,1000);
-y = dvector (0,1000);
+x = dvector (0,100000);
+y = dvector (0,100000);
 
 kount = -1;
 while (NULL != fgets ( temp, sizeof(temp), stdin )) {

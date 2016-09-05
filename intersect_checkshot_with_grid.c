@@ -35,7 +35,7 @@ int main (int argc, char **argv) {
    argc = GMT_begin (argc, argv);
 
    if (!getparstring("coeff_x", &coeff_x)) coeff_x="80MaSB_final_grid_TWT_msec.dat.trimmed.smooth.grd";
-   if (!getparstring("pfile",&pfile)) pfile = "./Bill_Hay_Checkshots_2016/Ceiba-01_2016.reform.dat";
+   if (!getparstring("pfile",&pfile)) pfile = "./checkshots/FIELD-01_2013.reform.dat";
    if (!getparshort("verbose" , &verbose)) verbose = 0;
 
    fpp = efopen (pfile, "r");

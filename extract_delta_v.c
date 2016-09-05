@@ -4,7 +4,9 @@
 #include "cwp.h"
 #include "segy.h"
 
+#define nint(x)  ((x) < 0 ? ceil ( (x) - 0.5 ) : floor ( (x) + 0.5 ))
 #define min(a,b) ((a) <= (b) ? (a) : (b))
+#define max(a,b) ((a) >= (b) ? (a) : (b))
 
 char *sdoc[] = {NULL};
 
@@ -13,12 +15,12 @@ segy tr;
 int main (int argc, char **argv) {
 
    char well[40], temp[256];
-   int ntr, ns, kount, index;
+   int imin, ntr, ns, kount, index;
    float factor1, seismic_depth;
-   float time, dt, scale_factor, seismic_vavg, delta_v, delta_z;
-   float *x, *y, *twt_array, *vavg_array, **data;
+   float dt, scale_factor, seismic_vavg, delta_v, delta_z;
+   float *x, *y, **data;
    double min_dist, dist, toler;
-   double factor, x_loc, y_loc, twt, depth, average_velocity;
+   double delrt, factor, x_loc, y_loc, twt, depth, average_velocity;
    FILE *fpp;
    cwp_String pfile;
    short verbose;
@@ -28,7 +30,7 @@ int main (int argc, char **argv) {
 
    if (!getparshort("verbose" , &verbose)) verbose = 0;
    if (!getparstring("pfile",&pfile)) pfile = "tops.lis";
-   if (!getpardouble("toler",&toler)) toler = 25.0;
+   if (!getpardouble("toler",&toler)) toler = 12.50;
   
    fpp = efopen (pfile, "r");
 
@@ -42,6 +44,8 @@ int main (int argc, char **argv) {
    ns  = tr.ns;
    dt  = tr.dt * 0.001;
    scale_factor = tr.scalco;
+   delrt = tr.delrt;
+   imin = nint ( delrt / dt );
    if (scale_factor < 0.0 ) scale_factor *= -1.0;
    if (scale_factor == 0.0 ) scale_factor = 1.0;
 
@@ -52,6 +56,7 @@ int main (int argc, char **argv) {
       fprintf ( stderr, "Coordinate scale factor = %f\n", scale_factor );
       fprintf ( stderr, "TOPS file name = %s, number of input samples = %d\n", pfile, kount);
       fprintf ( stderr, "Minimum distance tolerance = %8.2f meters\n", toler );
+      fprintf ( stderr, "Delrt = %f, imin = %d\n", delrt, imin );
       fprintf ( stderr, "\n" );
    }
 
@@ -59,13 +64,12 @@ int main (int argc, char **argv) {
    y    = ealloc1float ( ntr );
    data = ealloc2float ( ns, ntr );
 
-   twt_array  = ealloc1float ( ns );
-   vavg_array = ealloc1float ( ns );
-
-   for ( i = 0; i < ns; ++i ) twt_array[i] = i * dt;
-
    factor = 2000.0;
    factor1 = 0.0005;
+
+   int nsm1;
+   
+   nsm1 = ns - 1;
 
    rewind (stdin);
    for ( i = 0; i < ntr; ++i ) {
@@ -82,7 +86,7 @@ int main (int argc, char **argv) {
       (void) sscanf ( ((&(temp[0]))), "%s%lf%lf%lf%lf", well, &x_loc, &y_loc, &twt, &depth );
       average_velocity = ( depth / twt ) * factor;
 
-      min_dist = 99999999.99;
+      min_dist = DBL_MAX;
       index = -1;
       for ( j = 0; j < ntr; ++j ) {
          dist = sqrt ( pow ( x_loc - x[j], 2.0 ) + pow ( y_loc - y[j], 2.0 ) );
@@ -93,13 +97,14 @@ int main (int argc, char **argv) {
       }
 
       if ( index >= 0 ) {
-         for ( j = 0; j < ns; ++j ) vavg_array[j] = data[index][j];
-         time = twt;
-         intlin ( ns, twt_array, vavg_array, vavg_array[0], vavg_array[ns-1], 1, &time, &seismic_vavg);
+         if ( verbose ) fprintf ( stderr, "index = %d, x_loc = %f, x_seismic = %f, y_loc = %f, y_seismic = %f, min_dist = %f\n", index, x_loc, x[index], y_loc, y[index], min_dist ); 
+         j = min ( max ( nint ( twt / dt ) - imin, 0 ), nsm1 );
+         if ( verbose ) fprintf ( stderr, "sample = %d\n", j );
+         seismic_vavg = data[index][j];
          delta_v = average_velocity - seismic_vavg;
          seismic_depth = seismic_vavg * twt * factor1;
          delta_z = depth - seismic_depth;
-         printf ( "%-10s %10.2f %10.2f %8.2f %8.2f %8.2f %8.2f %8.2f %12.6f %12.6f\n", well, x_loc, y_loc, twt, depth, seismic_depth, seismic_vavg, average_velocity, delta_z, delta_v );
+         printf ( "%-16s %10.2f %10.2f %8.2f %8.2f %8.2f %8.2f %8.2f %12.6f %12.6f\n", well, x_loc, y_loc, twt, depth, seismic_depth, seismic_vavg, average_velocity, delta_z, delta_v );
       }
 
       if ( verbose && ( index >= 0 ) ) {
@@ -108,12 +113,11 @@ int main (int argc, char **argv) {
             min_dist, index, seismic_vavg, average_velocity, delta_z, delta_v );
       }
    }
-   efclose (fpp);
+
+   efclose ( fpp );
 
    free1float (x);
    free1float (y);
-   free1float (twt_array);
-   free1float (vavg_array);
    free2float (data);
 
    return EXIT_SUCCESS;

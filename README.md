@@ -13,7 +13,7 @@ Make a listing of deviation surveys and execute a script to loop over the list (
 
 ### wrapper script to loop over each deviation survey - stored in deviations.lis ###
 
-ls -alt *deviation_survey_from_Petrel.dat | awk '{print $9}' > deviations.lis
+ls -alt *deviation_survey_from_Program.dat | awk '{print $9}' > deviations.lis
 while read -r LINE ; do
    process.deviation.sh -s ${LINE}
 done < deviations.lis

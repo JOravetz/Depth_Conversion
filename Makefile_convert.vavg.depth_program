@@ -2,8 +2,8 @@
 
 include $(CWPROOT)/src/Makefile.config
 
-D = $L/libcwp.a $L/libpar.a $L/libsu.a $L/librecip.a
-LFLAGS= -I/u/10700029/include -I/u/10700029/include/gmt -L$L -lsu -lpar -lcwp -lrecip -lm -L/u/10700029/lib64 -lgmt -lpsl -lnetcdf 
+D = $L/libcwp.a $L/libpar.a $L/libsu.a
+LFLAGS= -I/u/000000/include -I/u/000000/include/gmt -L$L -lsu -lpar -lcwp -lm -L/u/000000/lib64 -lgmt -lpsl -lnetcdf 
 
 PROGS =			  \
 	$B/convert.vavg.depth

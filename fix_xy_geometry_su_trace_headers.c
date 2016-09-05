@@ -23,7 +23,7 @@ int main (int argc, char **argv) {
    initargs(argc, argv);
 
    if (!getparshort("verbose" , &verbose)) verbose = 0;
-   if (!getparstring("pfile",&pfile)) pfile = "Gridder_Bill_checkshots_XY_coords.lis";
+   if (!getparstring("pfile",&pfile)) pfile = "Gridder__checkshots_XY_coords.lis";
    if (!getpardouble("scaler",&scaler)) scaler = 100.0;
   
    ntr = gettra (&tr, 0);

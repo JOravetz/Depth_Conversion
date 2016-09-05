@@ -116,7 +116,7 @@ for ( i = 0; i < ntr; ++i ) {
       }
 
       if ( ! ( GMT_is_dnan (value_coeff_x3) ) ) {
-         if ( istop > istart ) {
+         if ( istop > istart + 2 ) {
             velocity = tr.data[istop]; 
             diff = value_coeff_x3 - velocity;
             gradient = diff / ( istop - istart ); 
