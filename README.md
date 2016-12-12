@@ -1,15 +1,15 @@
 
-# Ceiba T/D Velocity Model Update Procedure
+# Example T/D Velocity Model Update Procedure
 
 ### Bash script listing:
 
 ```
 AVG_VELOCITY="Cb_Ph3_TWT_Vavg_062013_32b.su"
-Ceiba_WMP_FILE="ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
+Example_WMP_FILE="ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
 
-extract_delta_v < ${AVG_VELOCITY} pfile=${Ceiba_WMP_FILE} verbose=1 >\
-ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
-awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis |\
+extract_delta_v < ${AVG_VELOCITY} pfile=${Example_WMP_FILE} verbose=1 >\
+ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
+awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis |\
 sort -n | uniq > test.new1.dat
 
 sum_data_t < test.new1.dat verbose=1 dt=1 | wc -l
@@ -26,7 +26,7 @@ apply_delta_v.new < ${AVG_VELOCITY} pfile=bub1 nx=213 ny=445 nt=100 verbose=1 > 
 # ************************************************ #
 
 echo "Extracting the Residual Delta-V values from the corrected average velocity grid"
-extract_delta_v < test.su pfile=${Ceiba_WMP_FILE} verbose=1 > output.deltav.lis
+extract_delta_v < test.su pfile=${Example_WMP_FILE} verbose=1 > output.deltav.lis
 cat output.deltav.lis
 echo
 minmax output.deltav.lis
@@ -36,23 +36,23 @@ sudepthconvert.v1 < ./SEGY_TWT/input1.trint.su vfile=test.su verbose=1 >\
 output.su && segyhdrs < output.su && segywrite < output.su tape=test.depth.sgy endian=0
 ```
 
-Set parameters for files containing Ceiba average velocities as a function of TWT (SU format) and ASCII listing of
+Set parameters for files containing Example average velocities as a function of TWT (SU format) and ASCII listing of
 well-marker picks (exported from interpretation application).  Setup bash environment variables and path to include programs and Seismic Unix.
 
 
 ```python
 %%%bash
-source /u/10700029/.bashrc
-cd /u/10700029/Ceiba.new
+source ${HOME}/.bashrc
+cd ${HOME}/Example.new
 AVG_VELOCITY="Cb_Ph3_TWT_Vavg_062013_32b.su"
-Ceiba_WMP_FILE="ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
+Example_WMP_FILE="ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
 ```
 
 Here is an example image of the TWT/Average-Velocity SU file - Inline 1540.
 
 ```
 suwind < Cb_Ph3_TWT_Vavg_062013_32b.su key=gelev min=1540 max=1540 |\
-suximage perc=100 cmap=hsv2 legend=1 title="Ceiba TWT/Vavg Inline 1540" label1="TWT (sec.)" label2="Xline values"\
+suximage perc=100 cmap=hsv2 legend=1 title="Example TWT/Vavg Inline 1540" label1="TWT (sec.)" label2="Xline values"\
 units="m/sec" grid1=dot grid2=dot f2=2050 d2=1 &
 ```
 
@@ -61,13 +61,13 @@ Move the mouse inside the image window and type "q" to terminate the display.  H
 
 ```python
 from IPython.display import Image
-Image(filename='Ceiba_inline_1540_twt_vavg.png')
+Image(filename='Example_inline_1540_twt_vavg.png')
 ```
 
 
 
 
-![png](Ceiba_TD_model_update_procedure_files/Ceiba_TD_model_update_procedure_7_0.png)
+![png](Example_TD_model_update_procedure_files/Example_TD_model_update_procedure_7_0.png)
 
 
 
@@ -76,9 +76,9 @@ The contents and format of the ASCII well-marker picks file are listed below (fi
 
 ```python
 %%%bash
-cat ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat | head -20
+cat ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat | head -20
 echo "..."
-cat ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat | tail -20
+cat ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat | tail -20
 ```
 
     C_01            520545.64    160669.56  3009.26  2889.09
@@ -273,7 +273,7 @@ cat Makefile
     include $(CWPROOT)/src/Makefile.config
     
     D = $L/libcwp.a $L/libpar.a $L/libsu.a $L/librecip.a
-    LFLAGS= -I/u/10700029/include -L$L -lsu -lpar -lcwp -lrecip -lm -L/u/10700029/lib64 -lgmt -lpsl -lnetcdf 
+    LFLAGS= -I${HOME}/include -L$L -lsu -lpar -lcwp -lrecip -lm -L${HOME}/lib64 -lgmt -lpsl -lnetcdf 
     
     PROGS =			  \
     	$B/joebob-vzerok  \
@@ -345,16 +345,16 @@ Execute the command:
 ```python
 %%%bash
 AVG_VELOCITY="Cb_Ph3_TWT_Vavg_062013_32b.su"
-Ceiba_WMP_FILE="ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
-extract_delta_v < ${AVG_VELOCITY} pfile=${Ceiba_WMP_FILE} verbose=1 > ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis 
-awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis | sort -n | uniq > test.new1.dat
+Example_WMP_FILE="ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
+extract_delta_v < ${AVG_VELOCITY} pfile=${Example_WMP_FILE} verbose=1 > ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis 
+awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis | sort -n | uniq > test.new1.dat
 ```
 
     
     Number of traces = 992001, number of samples per trace = 3001
     Time sample rate (milliseconds) = 2.000000
     Coordinate scale factor = 1.000000
-    TOPS file name = ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat, number of input samples = 380
+    TOPS file name = ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat, number of input samples = 380
     Minimum distance tolerance =    12.50 meters
     Delrt = 0.000000, imin = 0
     
@@ -1880,14 +1880,14 @@ awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Ceiba_Campanian_WMPs_and_Checkshots_
     min_dist =     5.68, index = 508194, seismic velocity =  1729.64, well average velocity =  1717.95,         delta_z =   -15.8601 meters, delta_v =   -11.6927 meters per second
 
 
-Here is a listing of the file ***ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis*** (first and last 20 lines):
+Here is a listing of the file ***ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis*** (first and last 20 lines):
 
 
 ```python
 %%%bash
-head -20 ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
+head -20 ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
 echo "..."
-tail -20 ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
+tail -20 ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
 ```
 
     well x_loc y_loc twt well_depth seismic_depth seismic_vavg average_velocity delta_z delta_v
@@ -2358,9 +2358,9 @@ Extracting the Residual Delta-V values from the corrected average velocity grid.
 
 ```python
 %%%bash
-Ceiba_WMP_FILE="ALL_Ceiba_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
+Example_WMP_FILE="ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
 echo "Extracting the Residual Delta-V values from the corrected average velocity grid"
-extract_delta_v < test.su pfile=${Ceiba_WMP_FILE} verbose=0 > output.deltav.lis
+extract_delta_v < test.su pfile=${Example_WMP_FILE} verbose=0 > output.deltav.lis
 cat output.deltav.lis
 echo
 minmax output.deltav.lis
@@ -2784,20 +2784,20 @@ Create an example output depth image of inline 1540.  Display the result.
 
 ```
 suwind < output.su key=gelev min=1540 max=1540 tmax=3.45 | \
-suximage perc=99 title="Ceiba Depth(m) Inline 1540" label1="Depth (m)" label2="Xline values"\
+suximage perc=99 title="Example Depth(m) Inline 1540" label1="Depth (m)" label2="Xline values"\
 grid1=dot grid2=dot f2=2050 d2=1 &
 ```
 
 
 ```python
 from IPython.display import Image
-Image(filename='Ceiba_inline_1540_depth.png')
+Image(filename='Example_inline_1540_depth.png')
 ```
 
 
 
 
-![png](Ceiba_TD_model_update_procedure_files/Ceiba_TD_model_update_procedure_38_0.png)
+![png](Example_TD_model_update_procedure_files/Example_TD_model_update_procedure_38_0.png)
 
 
 
