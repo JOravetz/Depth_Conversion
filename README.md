@@ -5,11 +5,11 @@
 
 ```
 AVG_VELOCITY="Cb_Ph3_TWT_Vavg_062013_32b.su"
-Example_WMP_FILE="ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
+Example_WMP_FILE="ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
 
 extract_delta_v < ${AVG_VELOCITY} pfile=${Example_WMP_FILE} verbose=1 >\
-ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
-awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis |\
+ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED.deltav.lis
+awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED.deltav.lis |\
 sort -n | uniq > test.new1.dat
 
 sum_data_t < test.new1.dat verbose=1 dt=1 | wc -l
@@ -45,7 +45,7 @@ well-marker picks (exported from interpretation application).  Setup bash enviro
 source ${HOME}/.bashrc
 cd ${HOME}/Example.new
 AVG_VELOCITY="Cb_Ph3_TWT_Vavg_062013_32b.su"
-Example_WMP_FILE="ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
+Example_WMP_FILE="ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
 ```
 
 Here is an example image of the TWT/Average-Velocity SU file - Inline 1540.
@@ -76,9 +76,9 @@ The contents and format of the ASCII well-marker picks file are listed below (fi
 
 ```python
 %%%bash
-cat ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat | head -20
+cat ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED_06-12-2016.dat | head -20
 echo "..."
-cat ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat | tail -20
+cat ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED_06-12-2016.dat | tail -20
 ```
 
     C_01            520545.64    160669.56  3009.26  2889.09
@@ -345,16 +345,16 @@ Execute the command:
 ```python
 %%%bash
 AVG_VELOCITY="Cb_Ph3_TWT_Vavg_062013_32b.su"
-Example_WMP_FILE="ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
-extract_delta_v < ${AVG_VELOCITY} pfile=${Example_WMP_FILE} verbose=1 > ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis 
-awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis | sort -n | uniq > test.new1.dat
+Example_WMP_FILE="ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
+extract_delta_v < ${AVG_VELOCITY} pfile=${Example_WMP_FILE} verbose=1 > ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED.deltav.lis 
+awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED.deltav.lis | sort -n | uniq > test.new1.dat
 ```
 
     
     Number of traces = 992001, number of samples per trace = 3001
     Time sample rate (milliseconds) = 2.000000
     Coordinate scale factor = 1.000000
-    TOPS file name = ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat, number of input samples = 380
+    TOPS file name = ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED_06-12-2016.dat, number of input samples = 380
     Minimum distance tolerance =    12.50 meters
     Delrt = 0.000000, imin = 0
     
@@ -1880,14 +1880,14 @@ awk '{if(NR>1){print $2, $3, $4, $10}}' ALL_Example_Campanian_WMPs_and_Checkshot
     min_dist =     5.68, index = 508194, seismic velocity =  1729.64, well average velocity =  1717.95,         delta_z =   -15.8601 meters, delta_v =   -11.6927 meters per second
 
 
-Here is a listing of the file ***ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis*** (first and last 20 lines):
+Here is a listing of the file ***ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED.deltav.lis*** (first and last 20 lines):
 
 
 ```python
 %%%bash
-head -20 ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
+head -20 ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED.deltav.lis
 echo "..."
-tail -20 ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED.deltav.lis
+tail -20 ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED.deltav.lis
 ```
 
     well x_loc y_loc twt well_depth seismic_depth seismic_vavg average_velocity delta_z delta_v
@@ -1977,7 +1977,7 @@ sum_data_t < test.new1.dat verbose=1 dt=1 | wc -l
     dx = 25.00, dy = 25.00, dt = 1.00, nx =   213, ny =   445, nt =   805
 
 
-For this particular example, the problem dimensions for the following script should be nx=213 and ny=445.  We will set nt=100 to cover the Campanian zone of interest.  Here is the simple python script:
+For this particular example, the problem dimensions for the following script should be nx=213 and ny=445.  We will set nt=100 to cover the Reservoir zone of interest.  Here is the simple python script:
 
 
 ```python
@@ -2358,7 +2358,7 @@ Extracting the Residual Delta-V values from the corrected average velocity grid.
 
 ```python
 %%%bash
-Example_WMP_FILE="ALL_Example_Campanian_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
+Example_WMP_FILE="ALL_Example_Reservoir_WMPs_and_Checkshots_COMBINED_06-12-2016.dat"
 echo "Extracting the Residual Delta-V values from the corrected average velocity grid"
 extract_delta_v < test.su pfile=${Example_WMP_FILE} verbose=0 > output.deltav.lis
 cat output.deltav.lis
